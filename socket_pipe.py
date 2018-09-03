@@ -76,7 +76,8 @@ class OzThread(threading.Thread):
     def run(self):
         inputs = [self.sock, self.process.stdout, self.process.stderr]
         while self.running:
-            [readable, writable, exceptional] = select.select(inputs, [], [])
+            [readable, writable, exceptional] = select.select(inputs, [], [],
+            10)
             for s in readable:
                 if s is self.sock:
                     try:
@@ -87,3 +88,15 @@ class OzThread(threading.Thread):
                         print(e)
                 else:
                     self.write_process(s.readline().decode('utf-8'))
+
+        self.sock.shutdown(socket.SHUT_RDWR)
+        self.sock.close()
+        self.process.wait()
+        panel = self.window.find_output_panel("oz_panel")
+        if panel is not None:
+            self.window.destroy_output_panel("oz_panel")
+
+    def stop(self):
+        exit_msg = "{Application.exit 0}\n\004\n\n"
+        self.sock.send(exit_msg.encode('utf-8'))
+        self.running = False

@@ -25,6 +25,16 @@ class OzRunCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         pass
 
+class OzFeedRegion(sublime_plugin.TextCommand):
+    @with_oz
+    def run(self, edit):
+        global sp
+        msg = ""
+        for region in self.view.sel():
+            if not region.empty():
+                msg += self.view.substr(region)
+        sp.send(msg)
+
 class OzFeedLine(sublime_plugin.TextCommand):
     @with_oz
     def run(self, edit):
@@ -43,11 +53,16 @@ class OzFeedBufferCommand(sublime_plugin.TextCommand):
         msg = self.view.substr(sublime.Region(0, self.view.size()))
         sp.send(msg)
 
+def stop():
+    global sp
+    if sp:
+        sp.stop()
+    sp = None
+
 class OzKillCommand(sublime_plugin.TextCommand):
     def run(self, edit):
-        global sp
-        if sp:
-            sp.send("{Application.exit 0}\n\004\n\n")
-            #TODO
-            #Close the process/socket
-        sp = None
+        stop()
+
+class ExitListener(sublime_plugin.EventListener):
+    def on_pre_close(view):
+        stop()
